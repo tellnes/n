@@ -141,10 +141,10 @@ install_node() {
   if test -d $dir; then
     # TODO: refactor, this is lame
     cd $dir \
-      && mkdir -p $N_PREFIX/lib/node \
-      && cp -fr $dir/include/node $N_PREFIX/include \
-      && cp -f $dir/bin/* $N_PREFIX/bin \
-      && cp -fr $dir/lib/node/* $N_PREFIX/lib/node/ .
+      && ln -fs $dir/include/node $N_PREFIX/include/node \
+      && ln -fs $dir/lib/node $N_PREFIX/lib/node \
+      && rm -v "$N_DIR/current" \
+      && ln -s $dir "$N_DIR/current"
   # install
   else
     local tarball="node-v$version.tar.gz"
