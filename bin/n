@@ -4,7 +4,7 @@
 
 VERSION="0.7.1"
 N_PREFIX=${N_PREFIX-/usr/local}
-VERSIONS_DIR=$N_PREFIX/n/versions
+N_DIR=${N_DIR-$N_PREFIX/n}
 
 #
 # Log the given <msg ...>
@@ -24,10 +24,11 @@ abort() {
 
 # setup
 
-test -d $VERSIONS_DIR || mkdir -p $VERSIONS_DIR
+test -d $N_DIR || mkdir -p $N_DIR
+test -d $N_DIR/versions || mkdir -p $N_DIR/versions
 
-if ! test -d $VERSIONS_DIR; then
-  abort "Failed to create versions directory ($VERSIONS_DIR), do you have permissions to do this?"
+if ! test -d $N_DIR; then
+  abort "Failed to create n directory ($N_DIR), do you have permissions to do this?"
 fi
 
 # curl / wget support
@@ -112,7 +113,7 @@ check_current_version() {
 
 display_versions() {
   check_current_version
-  for dir in $VERSIONS_DIR/*; do
+  for dir in $N_DIR/versions/*; do
     local version=${dir##*/}
     local config=`test -f $dir/.config && cat $dir/.config`
     if test "$version" = "$active"; then
@@ -136,7 +137,7 @@ install_node() {
   version=${version#v}
 
   # activate
-  local dir=$VERSIONS_DIR/$version
+  local dir="$N_DIR/versions/$version"
   if test -d $dir; then
     # TODO: refactor, this is lame
     cd $dir \
@@ -169,7 +170,7 @@ install_tarball() {
   # remove "v"
   version=${version#v}
 
-  local dir=$VERSIONS_DIR/$version
+  local dir="$N_DIR/versions/$version"
   local tarball="node-v$version.tar.gz"
   local logpath="/tmp/n.log"
 
@@ -193,14 +194,13 @@ install_tarball() {
   fi
 
   cd "$N_PREFIX/n/node-v$version" \
-    && ./configure --prefix $VERSIONS_DIR/$version $config\
+    && ./configure --prefix "$N_DIR/versions/$version" $config\
     && JOBS=4 make install \
     && cd .. \
     && cleanup $version \
     && mkdir -p $dir \
     && echo $config > "$dir/.config" \
-    && n $version \
-    && ln -s "$N_PREFIX/n/versions/$version" "$N_PREFIX/n/current"
+    && n $version
 }
 
 #
@@ -230,7 +230,7 @@ remove_version() {
   test -z $1 && abort "version(s) required"
   local version=${1#v}
   while test $# -ne 0; do
-    rm -rf $VERSIONS_DIR/$version
+    rm -rf "$N_DIR/versions/$version"
     shift
   done
 }
@@ -242,7 +242,7 @@ remove_version() {
 display_bin_path_for_version() {
   test -z $1 && abort "version required"
   local version=${1#v}
-  local bin=$VERSIONS_DIR/$version/bin/node
+  local bin="$N_DIR/versions/$version/bin/node"
   if test -f $bin; then
     printf $bin
   else
@@ -258,7 +258,7 @@ display_bin_path_for_version() {
 execute_with_version() {
   test -z $1 && abort "version required"
   local version=${1#v}
-  local bin=$VERSIONS_DIR/$version/bin/node
+  local bin="$N_DIR/versions/$version/bin/node"
 
   shift # remove version
 
@@ -277,7 +277,7 @@ execute_with_version() {
 execute_with_npm_version() {
   test -z $1 && abort "version required"
   local version=${1#v}
-  local bin=$VERSIONS_DIR/$version/bin
+  local bin="$N_DIR/versions/$version/bin"
 
   shift # remove version
 
@@ -326,7 +326,7 @@ list_versions() {
     if test "$active" = "$v"; then
       printf "  \033[32mο\033[0m $v \033[0m\n"
     else
-      if test -d $VERSIONS_DIR/$v; then
+      if test -d "$N_DIR/versions/$v"; then
         printf "  * $v \033[0m\n"
       else
         printf "    $v\n"
